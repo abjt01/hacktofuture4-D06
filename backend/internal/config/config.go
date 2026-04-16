@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"strconv"
 )
 
 // Config holds all runtime configuration loaded from environment variables.
@@ -12,37 +11,25 @@ type Config struct {
 	Port    string
 	GinMode string
 
-	// PostgreSQL
-	DatabaseURL string
-
 	// Python engine service
 	EngineURL string
 
+	// Flat-file vault path (shared with Python engine via volume mount)
+	VaultPath string
+
 	// CORS
 	CORSOrigins []string
-
-	// ChromaDB (forwarded to engine)
-	ChromaDBHost string
-	ChromaDBPort int
 }
 
 // Load reads environment variables and returns a populated Config.
-// Missing required variables cause a fatal error at startup.
+// No longer requires DATABASE_URL or ChromaDB.
 func Load() *Config {
-	port := getEnv("PORT", "8000")
-	dbURL := mustGetEnv("DATABASE_URL")
-	engineURL := getEnv("ENGINE_URL", "http://localhost:8002")
-	corsOrigins := getEnvSlice("CORS_ORIGINS", []string{"http://localhost:3000"})
-	chromaPort, _ := strconv.Atoi(getEnv("CHROMADB_PORT", "8001"))
-
 	return &Config{
-		Port:         port,
-		GinMode:      getEnv("GIN_MODE", "debug"),
-		DatabaseURL:  dbURL,
-		EngineURL:    engineURL,
-		CORSOrigins:  corsOrigins,
-		ChromaDBHost: getEnv("CHROMADB_HOST", "localhost"),
-		ChromaDBPort: chromaPort,
+		Port:        getEnv("PORT", "8000"),
+		GinMode:     getEnv("GIN_MODE", "debug"),
+		EngineURL:   getEnv("ENGINE_URL", "http://localhost:8002"),
+		VaultPath:   getEnv("VAULT_PATH", "vault"),
+		CORSOrigins: getEnvSlice("CORS_ORIGINS", []string{"http://localhost:3000"}),
 	}
 }
 
@@ -53,6 +40,7 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
+// mustGetEnv kept for legacy code references — now unused but harmless.
 func mustGetEnv(key string) string {
 	v := os.Getenv(key)
 	if v == "" {
@@ -66,7 +54,6 @@ func getEnvSlice(key string, fallback []string) []string {
 	if v == "" {
 		return fallback
 	}
-	// comma-separated
 	result := make([]string, 0)
 	start := 0
 	for i := 0; i <= len(v); i++ {

@@ -12,44 +12,47 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/rekall/backend/internal/config"
-	"github.com/rekall/backend/internal/db"
 	"github.com/rekall/backend/internal/engine"
 	"github.com/rekall/backend/internal/handlers"
 	"github.com/rekall/backend/internal/middleware"
 	"github.com/rekall/backend/internal/sse"
+	"github.com/rekall/backend/internal/store"
+	"github.com/rekall/backend/internal/vault"
 )
 
 func main() {
 	// Load .env from repo root (best-effort; production uses real env vars)
+	_ = godotenv.Load("../../.env")
 	_ = godotenv.Load("../.env")
-	_ = godotenv.Load(".env") // also try CWD for flexibility
+	_ = godotenv.Load(".env")
 
 	cfg := config.Load()
 	gin.SetMode(cfg.GinMode)
 
-	// ── Database ──────────────────────────────────────────────────────────
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	// ── Vault (flat-file, no DB) ────────────────────────────────────────────
+	vault.Init(cfg.VaultPath)
+	log.Printf("[REKALL] vault loaded from %s", cfg.VaultPath)
 
-	if err := db.Connect(ctx, cfg.DatabaseURL); err != nil {
-		log.Fatalf("database connect: %v", err)
+	// ── Store (in-memory) ───────────────────────────────────────────────────
+	if err := store.Load(cfg.VaultPath); err != nil {
+		log.Printf("[REKALL] store load warning: %v", err)
+	} else {
+		log.Println("[REKALL] store loaded incidents successfully")
 	}
-	defer db.Close()
-	log.Printf("[REKALL] connected to database")
 
-	// ── SSE broker ────────────────────────────────────────────────────────
+	// ── SSE broker ─────────────────────────────────────────────────────────
 	broker := sse.NewBroker()
 
-	// ── Engine client ─────────────────────────────────────────────────────
+	// ── Engine client ───────────────────────────────────────────────────────
 	eng := engine.NewClient(cfg.EngineURL)
 
-	// ── Handlers ──────────────────────────────────────────────────────────
+	// ── Handlers ────────────────────────────────────────────────────────────
 	webhookHandler  := handlers.NewWebhookHandler(broker, eng)
 	approvalHandler := handlers.NewApprovalHandler(eng)
 	streamHandler   := handlers.NewStreamHandler(broker)
 	callbackHandler := handlers.NewCallbackHandler(broker)
 
-	// ── Router ────────────────────────────────────────────────────────────
+	// ── Router ──────────────────────────────────────────────────────────────
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger())
@@ -85,7 +88,7 @@ func main() {
 	// SSE stream
 	r.GET("/stream/:id", streamHandler.Stream)
 
-	// Vault
+	// Vault (reads flat files)
 	v := r.Group("/vault")
 	{
 		v.GET("",       handlers.ListVault)
@@ -95,17 +98,17 @@ func main() {
 	// Metrics
 	m := r.Group("/metrics")
 	{
-		m.GET("/summary", handlers.Summary)
-		m.GET("/rl",      handlers.RLEpisodes)
+		m.GET("/summary",  handlers.Summary)
+		m.GET("/episodes", handlers.Episodes)
 	}
 
-	// Internal — called by the Python engine service only, not exposed to frontend
+	// Internal — called by the Python engine service only
 	internal := r.Group("/internal")
 	{
 		internal.POST("/engine-callback", callbackHandler.Handle)
 	}
 
-	// ── HTTP server with graceful shutdown ───────────────────────────────
+	// ── HTTP server with graceful shutdown ──────────────────────────────────
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      r,
@@ -126,11 +129,18 @@ func main() {
 	<-quit
 
 	log.Println("[REKALL] shutting down…")
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer shutdownCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("shutdown: %v", err)
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("[REKALL] shutdown error: %v", err)
 	}
+	
+	if err := store.Save(cfg.VaultPath); err != nil {
+		log.Printf("[REKALL] store save error: %v", err)
+	} else {
+		log.Println("[REKALL] store saved to disk")
+	}
+	
 	log.Println("[REKALL] stopped")
 }
