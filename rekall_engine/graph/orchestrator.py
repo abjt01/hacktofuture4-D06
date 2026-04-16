@@ -43,6 +43,8 @@ from ..agents.publish_guard import PublishGuardAgent
 from ..agents.learning   import LearningAgent
 from ..agents.sandbox    import SandboxAgent
 from ..types             import AgentLogEntry, DiagnosticBundle, GovernanceDecision, Outcome, FixProposal, SandboxResult
+from ..integrations import slack as _slack
+from ..integrations import notion as _notion
 
 log = logging.getLogger("rekall.orchestrator")
 
@@ -194,6 +196,21 @@ async def run_pipeline(
     # ── 6. Execute / Wait ─────────────────────────────────────────────────────
     gov: GovernanceDecision = state.get("governance_decision")
     decision = gov.decision if gov else "block_await_human"
+    # ── INTEGRATIONS: notify Slack on governance block ────────────────────────
+    gov: GovernanceDecision = state.get("governance_decision")
+    fix_proposal: FixProposal = state.get("fix_proposal")
+    if gov and fix_proposal:
+        asyncio.create_task(_slack.notify_governance(
+            incident_id   = incident_id,
+            failure_type  = state.get("failure_event").failure_type if state.get("failure_event") else "unknown",
+            source        = state.get("failure_event").source if state.get("failure_event") else "unknown",
+            risk_score    = gov.risk_score,
+            decision      = gov.decision,
+            risk_factors  = gov.risk_factors or [],
+            fix_description = fix_proposal.fix_description or "",
+            fix_tier      = fix_proposal.tier,
+            confidence    = fix_proposal.confidence or 0.0,
+        ))
 
     if decision == "block_await_human":
         # ── Minikube Sandbox Validation ───────────────────────────────────────
@@ -348,6 +365,27 @@ async def run_pipeline(
 
     # ── 6. Learning ───────────────────────────────────────────────────────────
     await _emit(log_queue, incident_id, "learning", "running", "Updating vault confidence")
+    # ── INTEGRATIONS: notify Slack + Notion on resolution ────────────────────
+    fix_proposal: FixProposal = state.get("fix_proposal")
+    asyncio.create_task(_slack.notify_outcome(
+        incident_id = incident_id,
+        source      = state.get("failure_event").source if state.get("failure_event") else "unknown",
+        outcome     = "success",
+        fix_tier    = fix_proposal.tier if fix_proposal else "unknown",
+        confidence  = fix_proposal.confidence if fix_proposal else 0.0,
+    ))
+    asyncio.create_task(_notion.log_incident(
+        incident_id     = incident_id,
+        status          = "resolved",
+        failure_type    = state.get("failure_event").failure_type if state.get("failure_event") else "unknown",
+        source          = state.get("failure_event").source if state.get("failure_event") else "unknown",
+        fix_tier        = fix_proposal.tier if fix_proposal else "unknown",
+        decision        = decision,
+        confidence      = fix_proposal.confidence if fix_proposal else 0.0,
+        risk_score      = gov.risk_score if gov else 0.0,
+        fix_description = fix_proposal.fix_description if fix_proposal else "",
+    ))
+
     try:
         fix_proposal: FixProposal = state.get("fix_proposal")
         if fix_proposal:
@@ -417,6 +455,29 @@ async def run_learning_callback(
             )
         await get_agent("learning").run(state)
         await _emit(log_queue, incident_id, "learning", "done", f"Reported ({result})")
+        # ── INTEGRATIONS: notify Slack + Notion on human decision ────────────────
+        asyncio.create_task(_slack.notify_outcome(
+            incident_id = incident_id,
+            source      = "human_review",
+            outcome     = result,   # "success" | "rejected"
+            fix_tier    = fix_proposal.tier,
+            confidence  = fix_proposal.confidence or 0.0,
+            reviewed_by = reviewed_by,
+            notes       = notes,
+        ))
+        asyncio.create_task(_notion.log_incident(
+            incident_id     = incident_id,
+            status          = "resolved" if result == "success" else "failed",
+            failure_type    = "unknown",
+            source          = "human_review",
+            fix_tier        = fix_proposal.tier,
+            decision        = "block_await_human",
+            confidence      = fix_proposal.confidence or 0.0,
+            risk_score      = 0.0,
+            fix_description = fix_proposal.fix_description or "",
+            reviewed_by     = reviewed_by,
+            notes           = notes,
+        ))
     except Exception as exc:
         log.error("[orchestrator] LearningAgent (callback) failed: %s", exc, exc_info=True)
         await _emit(log_queue, incident_id, "learning", "error", str(exc))
