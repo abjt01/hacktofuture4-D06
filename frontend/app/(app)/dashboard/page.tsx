@@ -6,61 +6,22 @@ import {
   Loader2, Play, AlertCircle, RefreshCw,
   Activity, CheckCircle2, Database, TrendingUp,
   Server, Cpu, TestTube, Shield, Container, Radio,
-  Zap, Terminal,
+  Zap,
 } from "lucide-react";
 import { useIncidents } from "@/lib/hooks/use-incidents";
 import { IncidentCard } from "@/components/incident-card";
 import { SkeletonCard } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 const SCENARIOS = [
-  {
-    id: "postgres_refused",
-    label: "Postgres Refused",
-    type: "infra",
-    icon: Server,
-    color: "text-amber-400",
-    accent: "hsl(38 92% 50%)",
-    desc: "Connection refused on port 5432",
-  },
-  {
-    id: "oom_kill",
-    label: "OOM Kill",
-    type: "oom",
-    icon: Cpu,
-    color: "text-red-400",
-    accent: "hsl(0 72% 51%)",
-    desc: "Container killed, exit code 137",
-  },
-  {
-    id: "test_failure",
-    label: "Test Failure",
-    type: "test",
-    icon: TestTube,
-    color: "text-blue-400",
-    accent: "hsl(217 91% 60%)",
-    desc: "3 assertions failed in test suite",
-  },
-  {
-    id: "secret_leak",
-    label: "Secret Leak",
-    type: "security",
-    icon: Shield,
-    color: "text-rose-400",
-    accent: "hsl(346 77% 50%)",
-    desc: "API key detected in commit diff",
-  },
-  {
-    id: "image_pull_backoff",
-    label: "Image Pull Backoff",
-    type: "deploy",
-    icon: Container,
-    color: "text-sky-400",
-    accent: "hsl(199 89% 54%)",
-    desc: "ImagePullBackOff on registry pull",
-  },
+  { id: "postgres_refused",   label: "Postgres Refused",   type: "infra",    icon: Server,    color: "text-amber-500" },
+  { id: "oom_kill",           label: "OOM Kill",           type: "oom",      icon: Cpu,       color: "text-red-500"   },
+  { id: "test_failure",       label: "Test Failure",       type: "test",     icon: TestTube,  color: "text-blue-500"  },
+  { id: "secret_leak",        label: "Secret Leak",        type: "security", icon: Shield,    color: "text-rose-500"  },
+  { id: "image_pull_backoff", label: "Image Pull Backoff", type: "deploy",   icon: Container, color: "text-sky-500"   },
 ];
 
 export default function DashboardPage() {
@@ -84,131 +45,80 @@ export default function DashboardPage() {
   const activeCount   = incidents.filter(i => i.status === "processing" || i.status === "awaiting_approval").length;
   const resolvedCount = incidents.filter(i => i.status === "resolved").length;
   const failedCount   = incidents.filter(i => i.status === "failed").length;
-  const successRate   = incidents.length > 0 ? Math.round(resolvedCount / incidents.length * 100) : 0;
 
   return (
     <div className="min-h-screen bg-background">
-
-      {/* ── Sticky header ───────────────────────────────────────── */}
-      <div
-        className="sticky top-0 z-10 page-header"
-        style={{ borderBottom: "1px solid hsl(var(--border))" }}
-      >
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      {/* ── Header ─────────────────────────────────────────── */}
+      <div className="border-b border-slate-200 bg-white sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div
-              className="flex items-center justify-center w-8 h-8 rounded-lg"
-              style={{
-                background: "hsl(217 91% 60% / 0.1)",
-                border: "1px solid hsl(217 91% 60% / 0.22)",
-                boxShadow: "0 0 14px -3px hsl(217 91% 60% / 0.2)",
-              }}
-            >
-              <Activity className="w-4 h-4 text-primary" />
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-orange-600 shadow-sm shadow-orange-500/10">
+              <Activity className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-foreground tracking-tight leading-none">
-                Live Dashboard
-              </h1>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Real-time CI/CD failure detection &amp; repair
-              </p>
+              <h1 className="text-base font-black text-slate-900 tracking-tight uppercase">Dashboard</h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Real-time CI/CD Repair</p>
             </div>
           </div>
           <button
             onClick={refetch}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
-              "text-xs font-medium text-muted-foreground",
-              "border border-transparent hover:border-border hover:text-foreground hover:bg-muted",
-              "transition-all duration-150"
-            )}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all border border-slate-100 shadow-sm"
           >
             <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
-            Refresh
+            REFRESH
           </button>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
 
-        {/* ── Stats row ───────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* ── Stats ──────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="Total Incidents"
             value={incidents.length}
             icon={<Activity className="w-4 h-4" />}
-            accent="hsl(217 91% 60%)"
+            accent="hsl(215 25% 15%)"
           />
           <StatCard
             label="Active Now"
             value={activeCount}
-            sub={activeCount > 0 ? "In pipeline…" : "All clear"}
+            sub={activeCount > 0 ? "Processing..." : "All clear"}
             trend={activeCount > 0 ? "up" : "neutral"}
             icon={<Zap className="w-4 h-4" />}
-            accent="hsl(38 92% 50%)"
+            accent="hsl(28 100% 50%)"
           />
           <StatCard
             label="Resolved"
             value={resolvedCount}
-            sub={incidents.length > 0 ? `${successRate}% success rate` : undefined}
+            sub={incidents.length > 0 ? `${Math.round(resolvedCount / incidents.length * 100)}% success` : undefined}
             trend="up"
             icon={<CheckCircle2 className="w-4 h-4" />}
-            accent="hsl(142 69% 42%)"
+            accent="hsl(142 76% 36%)"
           />
           <StatCard
             label="Failed"
             value={failedCount}
             icon={<TrendingUp className="w-4 h-4" />}
-            accent="hsl(0 72% 51%)"
+            accent="hsl(0 84% 60%)"
           />
         </div>
 
-        {/* ── Failure Simulator ───────────────────────────────────── */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{
-            border: "1px solid hsl(262 83% 65% / 0.2)",
-            background: "hsl(262 40% 8% / 0.6)",
-            boxShadow: "0 0 40px -12px hsl(262 83% 65% / 0.12)",
-          }}
-        >
-          {/* Header */}
-          <div
-            className="flex items-center gap-3 px-5 py-3.5"
-            style={{ borderBottom: "1px solid hsl(262 83% 65% / 0.14)" }}
-          >
-            <div
-              className="flex items-center justify-center w-7 h-7 rounded-lg"
-              style={{
-                background: "hsl(262 83% 65% / 0.12)",
-                border: "1px solid hsl(262 83% 65% / 0.24)",
-              }}
-            >
-              <Terminal className="w-3.5 h-3.5 text-purple-400" />
-            </div>
+        {/* ── Simulator ──────────────────────────────────────── */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border bg-background-subtle/50">
+            <Radio className="w-4 h-4 text-purple-500" />
             <div>
-              <p className="text-sm font-semibold text-foreground leading-none">Failure Simulator</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Inject a real-looking CI/CD incident to demo the repair pipeline
-              </p>
+              <p className="text-sm font-semibold text-foreground">Failure Simulator</p>
+              <p className="text-xs text-muted-foreground">Inject a real-looking CI/CD incident to demo the pipeline</p>
             </div>
-            <div
-              className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-md"
-              style={{
-                background: "hsl(262 83% 65% / 0.1)",
-                border: "1px solid hsl(262 83% 65% / 0.2)",
-              }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-              <span className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">
-                Demo Mode
-              </span>
-            </div>
+            <span className="ml-auto chip bg-purple-500/10 text-purple-500 border border-purple-500/20">
+              DEMO MODE
+            </span>
           </div>
 
           <div className="p-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
               {SCENARIOS.map((s) => {
                 const busy = simulating === s.id;
                 const Icon = s.icon;
@@ -217,59 +127,29 @@ export default function DashboardPage() {
                     key={s.id}
                     onClick={() => simulate(s.id)}
                     disabled={!!simulating}
-                    className="group relative flex flex-col gap-2.5 p-4 rounded-xl text-left transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{
-                      background: `${s.accent}09`,
-                      border: `1px solid ${s.accent}20`,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!simulating) {
-                        (e.currentTarget as HTMLElement).style.background = `${s.accent}16`;
-                        (e.currentTarget as HTMLElement).style.borderColor = `${s.accent}38`;
-                        (e.currentTarget as HTMLElement).style.boxShadow = `0 0 20px -6px ${s.accent}28`;
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = `${s.accent}09`;
-                      (e.currentTarget as HTMLElement).style.borderColor = `${s.accent}20`;
-                      (e.currentTarget as HTMLElement).style.boxShadow = "none";
-                    }}
+                    className={cn(
+                      "group relative flex flex-col items-start gap-2.5 p-4 rounded-xl",
+                      "border border-slate-100 bg-white hover:bg-slate-50",
+                      "transition-all hover:border-orange-200 hover:shadow-lg hover:shadow-orange-500/5",
+                      "disabled:opacity-50 disabled:cursor-not-allowed",
+                      "text-left"
+                    )}
                   >
-                    <div
-                      className="flex items-center justify-center w-8 h-8 rounded-lg"
-                      style={{
-                        background: busy ? "hsl(var(--muted))" : `${s.accent}18`,
-                        border: `1px solid ${s.accent}28`,
-                      }}
-                    >
+                    <div className={cn("flex items-center justify-center w-9 h-9 rounded-xl bg-slate-50 border border-slate-100", busy && "animate-pulse")}>
                       {busy
-                        ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        ? <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
                         : <Icon className={cn("w-4 h-4", s.color)} />
                       }
                     </div>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-foreground leading-snug">{s.label}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-                        {s.desc}
-                      </p>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 leading-snug">{s.label}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{s.type}</p>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span
-                        className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded"
-                        style={{
-                          color: s.accent,
-                          background: `${s.accent}18`,
-                        }}
-                      >
-                        {s.type}
-                      </span>
-                      {!simulating && (
-                        <Play
-                          className="w-3 h-3 opacity-30 group-hover:opacity-70 transition-opacity"
-                          style={{ color: s.accent }}
-                        />
-                      )}
-                    </div>
+                    {!simulating && (
+                      <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 opacity-0 group-hover:opacity-100 transition-all">
+                        <Play className="w-2.5 h-2.5 text-orange-500 fill-orange-500" />
+                      </div>
+                    )}
                   </button>
                 );
               })}
@@ -277,38 +157,24 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Incidents ───────────────────────────────────────────── */}
+        {/* ── Incidents ──────────────────────────────────────── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-foreground tracking-tight">
-                Recent Incidents
-              </h2>
+            <h2 className="text-sm font-semibold text-foreground">
+              Recent Incidents
               {incidents.length > 0 && (
-                <span
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                  style={{
-                    background: "hsl(var(--muted))",
-                    color: "hsl(var(--muted-foreground))",
-                  }}
-                >
-                  {incidents.length}
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {incidents.length} total
                 </span>
               )}
-            </div>
+            </h2>
             {loading && incidents.length > 0 && (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
             )}
           </div>
 
           {error && (
-            <div
-              className="flex items-center gap-3 p-4 rounded-xl text-sm text-red-400"
-              style={{
-                border: "1px solid hsl(0 72% 51% / 0.2)",
-                background: "hsl(0 72% 51% / 0.06)",
-              }}
-            >
+            <div className="flex items-center gap-3 p-4 rounded-xl border border-destructive/20 bg-destructive/5 text-sm text-destructive">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error} — is the backend running?</span>
             </div>
@@ -319,25 +185,13 @@ export default function DashboardPage() {
               {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : incidents.length === 0 ? (
-            <div
-              className="flex flex-col items-center justify-center py-20 rounded-xl text-center"
-              style={{
-                border: "1px dashed hsl(var(--border))",
-                background: "hsl(var(--muted) / 0.3)",
-              }}
-            >
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-                style={{
-                  background: "hsl(var(--muted))",
-                  border: "1px solid hsl(var(--border))",
-                }}
-              >
+            <div className="flex flex-col items-center justify-center py-20 rounded-xl border border-dashed border-border text-center">
+              <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-4">
                 <Radio className="w-5 h-5 text-muted-foreground" />
               </div>
-              <p className="text-sm font-semibold text-foreground">No incidents yet</p>
-              <p className="text-xs text-muted-foreground mt-1.5 max-w-xs">
-                Fire a scenario above to watch the REKALL pipeline animate in real-time
+              <p className="text-sm font-medium text-foreground">No incidents yet</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Use the simulator above to inject a failure scenario
               </p>
             </div>
           ) : (
@@ -346,7 +200,7 @@ export default function DashboardPage() {
                 <div
                   key={inc.id}
                   className="fade-up"
-                  style={{ animationDelay: `${i * 35}ms` }}
+                  style={{ animationDelay: `${i * 40}ms` }}
                 >
                   <IncidentCard incident={inc} />
                 </div>

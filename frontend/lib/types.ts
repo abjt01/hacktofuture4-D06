@@ -44,14 +44,6 @@ export interface DiagnosticBundle {
   created_at: string;
 }
 
-export interface SkippedFix {
-  vault_entry_id: string;
-  fix_description: string;
-  reward_score: number;
-  confidence: number;
-  reason: string; // e.g. "reward_below_threshold"
-}
-
 export interface RLMTraceEntry {
   depth: number;        // 0 = hotspot scan, 1 = deep investigation
   hotspot: string;      // log region examined
@@ -69,10 +61,8 @@ export interface FixProposal {
   fix_commands: string[];
   fix_diff: string | null;
   confidence: number;
-  reward_score?: number;
-  reasoning?: string;
-  skipped_fixes?: SkippedFix[];
-  rlm_trace?: RLMTraceEntry[];
+  reasoning: string;
+  rlm_trace: RLMTraceEntry[];
   created_at: string;
 }
 
@@ -96,26 +86,15 @@ export interface AgentLog {
 
 export interface VaultEntry {
   id: string;
-  chroma_id: string;
+  failure_signature: string;   // replaces chroma_id — the vault lookup key
   failure_type: string | null;
   fix_description: string | null;
   source: "human" | "synthetic";
   confidence: number;
-  reward_score: number;
   retrieval_count: number;
   success_count: number;
   created_at: string;
   updated_at: string;
-}
-
-export interface RLEpisode {
-  id: string;
-  incident_id: string;
-  fix_tier: string | null;
-  outcome: string | null;
-  reward: number;
-  cumulative_reward: number;
-  created_at: string;
 }
 
 export interface MetricsSummary {
@@ -123,5 +102,4 @@ export interface MetricsSummary {
   resolved_count: number;
   vault_size: number;
   avg_confidence: number | null;
-  total_reward: number | null;
 }

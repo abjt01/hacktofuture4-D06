@@ -42,7 +42,8 @@ export const api = {
 
   // Metrics
   summary: () => get<Record<string, unknown>>("/metrics/summary"),
-  rlEpisodes: () => get<{ episodes: unknown[] }>("/metrics/rl"),
+  episodes: (limit = 100) =>
+    get<{ episodes: unknown[]; total: number }>(`/metrics/episodes?limit=${limit}`),
 
   // SSE stream URL (not a fetch — used directly in hooks)
   streamUrl: (incidentId: string) => `${BASE}/stream/${incidentId}`,
