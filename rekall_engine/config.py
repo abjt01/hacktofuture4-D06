@@ -53,6 +53,25 @@ try:
         notion_token:           str = ""
         notion_database_id:     str = ""
 
+        # ── GitHub Live PR (production only) ─────────────────────────────
+        # When github_live_pr=True the orchestrator execute step uses PyGithub
+        # to branch, commit fix_commands, and call repo.create_pull().
+        # Keep False in demo mode — the pipeline emits trace events only.
+        github_token:    str  = ""     # GITHUB_TOKEN env var (fine-grained PAT)
+        github_repo:     str  = ""     # e.g. "owner/repo" (GITHUB_REPO)
+        github_live_pr:  bool = False  # set True to enable real PR creation
+
+        # ── Minikube Sandbox (optional) ───────────────────────────────────
+        # When sandbox_enabled=True, the pipeline deploys the fix into a
+        # Minikube namespace, runs the CI test suite, and validates the fix
+        # before raising a PR. Requires minikube + kubectl on PATH.
+        sandbox_enabled:       bool = False
+        minikube_profile:      str  = "rekall"
+        minikube_cpus:         int  = 4
+        minikube_memory:       int  = 8192   # MB
+        sandbox_timeout:       int  = 300    # seconds
+        sandbox_valkey_image:  str  = "valkey/valkey:7.2-alpine"
+
         class Config:
             env_file = ".env"
             env_file_encoding = "utf-8"
@@ -85,6 +104,15 @@ except ImportError:
         slack_webhook_url          = os.getenv("SLACK_WEBHOOK_URL", "")
         notion_token               = os.getenv("NOTION_TOKEN", "")
         notion_database_id         = os.getenv("NOTION_DATABASE_ID", "")
+        github_token               = os.getenv("GITHUB_TOKEN", "")
+        github_repo                = os.getenv("GITHUB_REPO", "")
+        github_live_pr             = os.getenv("GITHUB_LIVE_PR", "false").lower() == "true"
+        sandbox_enabled            = os.getenv("SANDBOX_ENABLED", "false").lower() == "true"
+        minikube_profile           = os.getenv("MINIKUBE_PROFILE", "rekall")
+        minikube_cpus              = int(os.getenv("MINIKUBE_CPUS", "4"))
+        minikube_memory            = int(os.getenv("MINIKUBE_MEMORY", "8192"))
+        sandbox_timeout            = int(os.getenv("SANDBOX_TIMEOUT", "300"))
+        sandbox_valkey_image       = os.getenv("SANDBOX_VALKEY_IMAGE", "valkey/valkey:7.2-alpine")
 
     engine_config = _FallbackConfig()
 
