@@ -13,6 +13,8 @@ backend/coverage.out
 backend/coverage.html
 *.exe
 *.test
+.gocache/
+.gomodcache/
 
 # ── Python ───────────────────────────────────
 __pycache__/
