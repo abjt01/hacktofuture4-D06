@@ -37,9 +37,19 @@ describe("RiskGauge", () => {
     expect(screen.getByText("72%")).toBeInTheDocument();
   });
 
-  it("renders decision label", () => {
+  it("renders decision label for auto_apply", () => {
     render(<RiskGauge decision={makeDecision(0.2, "auto_apply")} />);
-    expect(screen.getByText("Auto-Apply")).toBeInTheDocument();
+    expect(screen.getByText("Auto-applied")).toBeInTheDocument();
+  });
+
+  it("renders decision label for create_pr", () => {
+    render(<RiskGauge decision={makeDecision(0.5, "create_pr")} />);
+    expect(screen.getByText("Pull request opened")).toBeInTheDocument();
+  });
+
+  it("renders decision label for block_await_human", () => {
+    render(<RiskGauge decision={makeDecision(0.8, "block_await_human")} />);
+    expect(screen.getByText("Awaiting human review")).toBeInTheDocument();
   });
 
   it("renders risk factors", () => {

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Cpu, Search, ArrowUpDown, BarChart2 } from "lucide-react";
+import { Shield, Cpu, Search, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { cn, fmtPct } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { VaultEntry } from "@/lib/types";
 
 type SortKey = "confidence" | "retrieval_count" | "created_at";
@@ -40,50 +40,31 @@ export function VaultExplorer({ entries }: Props) {
     });
 
   return (
-    <div className="space-y-4">
-      {/* ── Controls ──────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row gap-2">
+    <div className="space-y-6">
+      {/* Controls */}
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none text-muted-foreground"
-          />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search fixes, failure types…"
-            className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none transition-all"
-            style={{
-              background: "hsl(var(--muted) / 0.5)",
-              border: "1px solid hsl(var(--border))",
-            }}
-            onFocus={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = "hsl(217 91% 60% / 0.4)";
-              (e.currentTarget as HTMLElement).style.boxShadow = "0 0 0 3px hsl(217 91% 60% / 0.08)";
-            }}
-            onBlur={(e) => {
-              (e.currentTarget as HTMLElement).style.borderColor = "hsl(var(--border))";
-              (e.currentTarget as HTMLElement).style.boxShadow = "none";
-            }}
+            placeholder="Search fixes, failure types, or signatures..."
+            className="w-full pl-11 pr-4 py-3 text-sm bg-white border border-slate-200 rounded-2xl
+                       text-slate-900 placeholder:text-slate-400 font-medium
+                       focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 shadow-sm transition-all"
           />
         </div>
-
-        <div
-          className="flex rounded-xl overflow-hidden text-xs"
-          style={{ border: "1px solid hsl(var(--border))" }}
-        >
+        <div className="flex p-1 bg-white border border-slate-200 rounded-2xl shadow-sm">
           {(["all", "human", "synthetic"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={cn("px-3.5 py-2 capitalize font-medium transition-all duration-150")}
-              style={filter === f ? {
-                background: "hsl(217 91% 60% / 0.12)",
-                color: "hsl(217 91% 60%)",
-                borderRight: f !== "synthetic" ? "1px solid hsl(217 91% 60% / 0.15)" : "none",
-              } : {
-                color: "hsl(var(--muted-foreground))",
-                borderRight: f !== "synthetic" ? "1px solid hsl(var(--border))" : "none",
-              }}
+              className={cn(
+                "px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                filter === f
+                  ? "bg-slate-900 text-white shadow-lg"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-50",
+              )}
             >
               {f}
             </button>
@@ -91,53 +72,37 @@ export function VaultExplorer({ entries }: Props) {
         </div>
       </div>
 
-      {/* ── Sort header ───────────────────────────────────────── */}
+      {/* Table header */}
       {filtered.length > 0 && (
-        <div className="hidden sm:grid grid-cols-[1fr_80px_70px_90px] gap-2 px-4 pb-1">
-          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-            Fix Entry
-          </span>
+        <div className="hidden sm:grid grid-cols-[1fr_100px_100px_110px] gap-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+          <span>Institutional Knowledge</span>
           {(["confidence", "retrieval_count", "created_at"] as SortKey[]).map((key) => (
             <button
               key={key}
               onClick={() => toggleSort(key)}
-              className={cn(
-                "flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] hover:text-foreground transition-colors text-left",
-                sort === key ? "text-primary" : "text-muted-foreground"
-              )}
+              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors text-left"
             >
-              {key === "confidence" ? "Conf" : key === "retrieval_count" ? "Hits" : "Date"}
-              <ArrowUpDown className="w-2.5 h-2.5 opacity-60" />
+              {key === "confidence" ? "Conf." : key === "retrieval_count" ? "Hits" : "Date"}
+              <ArrowUpDown className="w-3 h-3" />
             </button>
           ))}
         </div>
       )}
 
-      {/* ── Entries ───────────────────────────────────────────── */}
+      {/* Entries */}
       {filtered.length === 0 ? (
-        <div
-          className="flex flex-col items-center justify-center py-20 rounded-xl text-center"
-          style={{
-            border: "1px dashed hsl(var(--border))",
-            background: "hsl(var(--muted) / 0.2)",
-          }}
-        >
-          <BarChart2 className="w-8 h-8 text-muted-foreground opacity-30 mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">
-            {query ? `No matches for "${query}"` : "Vault is empty"}
+        <div className="bg-white border border-dashed border-slate-200 rounded-3xl py-32 flex flex-col items-center justify-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center">
+            <Search className="w-6 h-6 text-slate-300" />
+          </div>
+          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+            {query ? `No knowledge found for "${query}"` : "Memory Vault is currently empty"}
           </p>
-          {!query && (
-            <p className="text-xs text-muted-foreground opacity-60 mt-1">
-              Run a pipeline to populate the memory vault
-            </p>
-          )}
         </div>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((entry, i) => (
-            <div key={entry.id} className="fade-up" style={{ animationDelay: `${i * 30}ms` }}>
-              <VaultRow entry={entry} />
-            </div>
+        <div className="space-y-3">
+          {filtered.map((entry) => (
+            <VaultRow key={entry.id} entry={entry} />
           ))}
         </div>
       )}
@@ -147,81 +112,54 @@ export function VaultExplorer({ entries }: Props) {
 
 function VaultRow({ entry }: { entry: VaultEntry }) {
   const pct = Math.round(entry.confidence * 100);
-  const isHuman = entry.source === "human";
-
-  const barColor = pct >= 75 ? "hsl(142 69% 42%)" : pct >= 50 ? "hsl(38 92% 50%)" : "hsl(0 72% 51%)";
-  const accent   = isHuman ? "hsl(142 69% 42%)" : "hsl(199 89% 54%)";
+  const barColor = pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-orange-500" : "bg-red-500";
 
   return (
-    <div
-      className="grid sm:grid-cols-[1fr_80px_70px_90px] items-center gap-2 px-4 py-3.5 rounded-xl transition-all duration-150 card-hover"
-      style={{
-        background: "hsl(var(--card))",
-        border: `1px solid ${accent}18`,
-      }}
-    >
-      {/* Main content */}
-      <div className="flex items-start gap-3 min-w-0">
-        <div
-          className="mt-0.5 flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-lg"
-          style={{ background: `${accent}14`, border: `1px solid ${accent}24` }}
-        >
-          {isHuman
-            ? <Shield className="w-3.5 h-3.5" style={{ color: accent }} />
-            : <Cpu    className="w-3.5 h-3.5" style={{ color: accent }} />
+    <div className="group bg-white border border-slate-100 rounded-2xl px-6 py-5 shadow-sm transition-all hover:shadow-xl hover:shadow-orange-500/5 hover:border-orange-100 cursor-pointer">
+      <div className="flex items-start gap-5">
+        {/* Source icon */}
+        <div className={cn(
+          "shrink-0 flex items-center justify-center w-12 h-12 rounded-2xl transition-transform group-hover:scale-110",
+          entry.source === "human" ? "bg-emerald-50" : "bg-blue-50"
+        )}>
+          {entry.source === "human"
+            ? <Shield className="w-5 h-5 text-emerald-600" />
+            : <Cpu    className="w-5 h-5 text-blue-600" />
           }
         </div>
-        <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
+
+        {/* Content */}
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-center gap-2.5 flex-wrap">
             {entry.failure_type && (
-              <Badge variant="muted">{entry.failure_type.toUpperCase()}</Badge>
+              <Badge variant="muted" className="font-black text-[10px] tracking-widest opacity-80 uppercase">{entry.failure_type}</Badge>
             )}
-            <Badge variant={isHuman ? "success" : "info"}>
-              {isHuman ? "T1 Human" : "T2 Synthetic"}
+            <Badge variant={entry.source === "human" ? "success" : "info"} className="font-black text-[10px] tracking-widest uppercase">
+              {entry.source}
             </Badge>
           </div>
-          <p className="text-sm text-foreground truncate font-medium">
-            {entry.fix_description ?? "No description"}
+          <p className="text-base font-bold text-slate-800 line-clamp-2 leading-relaxed">
+            {entry.fix_description ?? "No fix description provided."}
           </p>
-          {entry.reward_score !== undefined && (
-            <p
-              className={cn("text-[10px] font-mono font-bold")}
-              style={{ color: entry.reward_score >= 0 ? "hsl(142 69% 42%)" : "hsl(0 72% 51%)" }}
-            >
-              {entry.reward_score >= 0 ? "+" : ""}{entry.reward_score.toFixed(2)} reward
-            </p>
-          )}
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Sig: <span className="text-slate-500 font-mono lowercase">{entry.failure_signature}</span>
+          </p>
         </div>
-      </div>
 
-      {/* Confidence */}
-      <div className="hidden sm:flex flex-col items-end gap-1.5">
-        <span className="text-xs font-bold font-mono" style={{ color: barColor }}>
-          {pct}%
-        </span>
-        <div
-          className="w-16 h-1.5 rounded-full overflow-hidden"
-          style={{ background: "hsl(var(--muted))" }}
-        >
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${pct}%`, background: barColor }}
-          />
+        {/* Stats */}
+        <div className="shrink-0 text-right space-y-3">
+          <div className="flex items-center gap-3 justify-end">
+            <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+              <div className={cn("h-full rounded-full transition-all duration-1000", barColor)} style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-xs font-black text-slate-900 w-10 text-right">{pct}%</span>
+          </div>
+          <div className="flex justify-end">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-50 border border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900 transition-all">
+              {entry.retrieval_count} Hits
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Hits */}
-      <div className="hidden sm:block text-right">
-        <span className="text-xs font-mono text-muted-foreground">
-          {entry.retrieval_count}
-        </span>
-      </div>
-
-      {/* Date */}
-      <div className="hidden sm:block text-right">
-        <span className="text-[10px] text-muted-foreground font-mono">
-          {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-        </span>
       </div>
     </div>
   );

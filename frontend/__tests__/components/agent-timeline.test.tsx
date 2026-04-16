@@ -13,31 +13,31 @@ const makeLog = (step: string, status: "running" | "done" | "error", detail = "d
 });
 
 describe("AgentTimeline", () => {
-  it("renders all six pipeline steps", () => {
+  it("renders all seven pipeline steps", () => {
     render(<AgentTimeline logs={[]} done={false} />);
     expect(screen.getByText(/Monitor/)).toBeInTheDocument();
     expect(screen.getByText(/Diagnostic/)).toBeInTheDocument();
     expect(screen.getByText(/Fix/)).toBeInTheDocument();
+    expect(screen.getByText(/Simulation/)).toBeInTheDocument();
     expect(screen.getByText(/Governance/)).toBeInTheDocument();
-    expect(screen.getByText(/Execute/)).toBeInTheDocument();
+    expect(screen.getByText(/Publish/)).toBeInTheDocument();
     expect(screen.getByText(/Learning/)).toBeInTheDocument();
   });
 
   it("shows done state for completed steps", () => {
     const logs = [makeLog("monitor", "done", "Normalised payload")];
     render(<AgentTimeline logs={logs} done={false} />);
-    // Detail shows for done steps
     expect(screen.getByText("Normalised payload")).toBeInTheDocument();
   });
 
   it("shows pipeline complete when done is true", () => {
     render(<AgentTimeline logs={[]} done={true} />);
-    expect(screen.getByText("Pipeline complete")).toBeInTheDocument();
+    expect(screen.getByText(/Pipeline completed successfully/)).toBeInTheDocument();
   });
 
   it("does not show pipeline complete when done is false", () => {
     render(<AgentTimeline logs={[]} done={false} />);
-    expect(screen.queryByText("Pipeline complete")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Pipeline completed successfully/)).not.toBeInTheDocument();
   });
 
   it("deduplicates logs — uses latest status per step", () => {
@@ -46,7 +46,6 @@ describe("AgentTimeline", () => {
       makeLog("monitor", "done", "Finished"),
     ];
     render(<AgentTimeline logs={logs} done={false} />);
-    // Only the last detail should appear
     expect(screen.getByText("Finished")).toBeInTheDocument();
     expect(screen.queryByText("Starting")).not.toBeInTheDocument();
   });

@@ -1,19 +1,20 @@
 "use client";
 
 import {
-  CheckCircle2, Loader2, XCircle,
-  Radio, Microscope, Wrench, Scale, Rocket, Brain,
+  CheckCircle2, Loader2, XCircle, Circle,
+  Radio, Microscope, Wrench, Scale, Rocket, Brain, Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AgentLog } from "@/lib/types";
 
 const STEPS = [
-  { key: "monitor",    label: "Monitor",    sub: "Detect & normalise event",    icon: Radio,       accent: "hsl(38 92% 50%)"   },
-  { key: "diagnostic", label: "Diagnostic", sub: "Fetch logs, diff, tests",     icon: Microscope,  accent: "hsl(217 91% 60%)"  },
-  { key: "fix",        label: "Fix",        sub: "Search vault T1 → T2 → T3",  icon: Wrench,      accent: "hsl(142 69% 42%)"  },
-  { key: "governance", label: "Governance", sub: "Score risk, decide action",   icon: Scale,       accent: "hsl(262 83% 65%)"  },
-  { key: "execute",    label: "Execute",    sub: "Apply fix / open PR",         icon: Rocket,      accent: "hsl(199 89% 54%)"  },
-  { key: "learning",   label: "Learning",   sub: "Update vault confidence",     icon: Brain,       accent: "hsl(280 80% 65%)"  },
+  { key: "monitor",    label: "Monitor",    sub: "Detect & normalise event",    icon: Radio },
+  { key: "diagnostic", label: "Diagnostic", sub: "Fetch logs, diff, tests",     icon: Microscope },
+  { key: "fix",        label: "Fix",        sub: "Search vault T1 → T2 → T3",  icon: Wrench },
+  { key: "simulation", label: "Simulation", sub: "Counterfactual sandbox",      icon: Rocket },
+  { key: "governance", label: "Governance", sub: "Score risk, decide action",   icon: Scale },
+  { key: "publish_guard", label: "Publish", sub: "Supply chain gate",           icon: Shield },
+  { key: "learning",   label: "Learning",   sub: "Update vault confidence",     icon: Brain },
 ];
 
 interface Props {
@@ -28,138 +29,77 @@ export function AgentTimeline({ logs, done }: Props) {
   }
 
   return (
-    <div className="space-y-px">
-      {STEPS.map(({ key, label, sub, icon: StepIcon, accent }, idx) => {
-        const entry     = statusMap.get(key);
-        const status    = entry?.status ?? "pending";
-        const detail    = entry?.detail;
-        const isLast    = idx === STEPS.length - 1;
+    <div className="space-y-1">
+      {STEPS.map(({ key, label, sub, icon: StepIcon }, idx) => {
+        const entry  = statusMap.get(key);
+        const status = entry?.status ?? "pending";
+        const detail = entry?.detail;
+        const isLast = idx === STEPS.length - 1;
+
         const isDone    = status === "done";
         const isRunning = status === "running";
         const isError   = status === "error";
-        const isPending = status === "pending";
-
-        const nodeColor  = isDone ? accent : isRunning ? accent : isError ? "hsl(0 72% 51%)" : "hsl(var(--border))";
-        const nodeBg     = isDone
-          ? `${accent}18`
-          : isRunning
-          ? `${accent}12`
-          : isError
-          ? "hsl(0 72% 51% / 0.1)"
-          : "hsl(var(--muted) / 0.5)";
 
         return (
           <div key={key} className="flex gap-3">
-            {/* ── Track column ─────────────────────────────── */}
-            <div className="flex flex-col items-center flex-shrink-0">
+            {/* Track column */}
+            <div className="flex flex-col items-center">
               {/* Step node */}
-              <div
-                className={cn(
-                  "relative flex items-center justify-center w-7 h-7 rounded-lg flex-shrink-0 transition-all duration-300",
-                  isRunning && "step-running"
-                )}
-                style={{
-                  background: nodeBg,
-                  border: `1px solid ${isDone || isRunning ? nodeColor : "hsl(var(--border))"}`,
-                  boxShadow: (isDone || isRunning) && !isError
-                    ? `0 0 12px -3px ${accent}40`
-                    : "none",
-                }}
-              >
-                {isDone ? (
-                  <CheckCircle2 className="w-3.5 h-3.5" style={{ color: accent }} />
-                ) : isRunning ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: accent }} />
-                ) : isError ? (
-                  <XCircle className="w-3.5 h-3.5 text-red-400" />
-                ) : (
-                  <StepIcon
-                    className="w-3.5 h-3.5"
-                    style={{ color: "hsl(var(--muted-foreground))", opacity: 0.4 }}
-                  />
-                )}
+              <div className={cn(
+                "relative flex items-center justify-center w-8 h-8 rounded-lg border flex-shrink-0 transition-all",
+                isDone    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" :
+                isRunning ? "bg-amber-500/10 border-amber-500/30 text-amber-500 step-running" :
+                isError   ? "bg-red-500/10 border-red-500/30 text-red-500" :
+                "bg-muted/50 border-border text-muted-foreground/40"
+              )}>
+                {isDone    ? <CheckCircle2 className="w-3.5 h-3.5" /> :
+                 isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
+                 isError   ? <XCircle className="w-3.5 h-3.5" /> :
+                 <StepIcon className="w-3.5 h-3.5" />}
               </div>
-
-              {/* Connector line */}
+              {/* Connector */}
               {!isLast && (
-                <div
-                  className="w-px my-1 flex-1 min-h-[14px] transition-all duration-500"
-                  style={{
-                    background: isDone
-                      ? `linear-gradient(180deg, ${accent}50, ${accent}20)`
-                      : "hsl(var(--border))",
-                  }}
-                />
+                <div className={cn(
+                  "w-px my-1 flex-1 transition-colors",
+                  isDone ? "bg-emerald-500/25" : "bg-border/60"
+                )} style={{ minHeight: 16 }} />
               )}
             </div>
 
-            {/* ── Content ──────────────────────────────────── */}
-            <div className={cn("flex-1 min-w-0 pb-2 pt-0.5", isLast && "pb-0")}>
+            {/* Content */}
+            <div className={cn("pb-2 flex-1 min-w-0 pt-1", isLast && "pb-0")}>
               <div className="flex items-center gap-2">
-                <span
-                  className={cn("text-sm font-semibold transition-colors leading-none")}
-                  style={{
-                    color: isDone
-                      ? "hsl(var(--foreground))"
-                      : isRunning
-                      ? accent
-                      : isError
-                      ? "hsl(0 72% 51%)"
-                      : "hsl(var(--muted-foreground))",
-                    opacity: isPending ? 0.45 : 1,
-                  }}
-                >
+                <span className={cn(
+                  "text-sm font-medium transition-colors",
+                  isDone    ? "text-foreground" :
+                  isRunning ? "text-amber-500" :
+                  isError   ? "text-red-500"   :
+                  "text-muted-foreground/60"
+                )}>
                   {label}
                 </span>
-
                 {isRunning && (
-                  <span
-                    className="text-[9px] font-bold tracking-[0.12em] uppercase px-1.5 py-0.5 rounded"
-                    style={{
-                      color: accent,
-                      background: `${accent}18`,
-                    }}
-                  >
-                    running
-                  </span>
+                  <span className="text-[10px] text-amber-500 font-bold tracking-widest">RUNNING</span>
                 )}
                 {isDone && (
-                  <span
-                    className="text-[9px] font-bold tracking-[0.12em] uppercase"
-                    style={{ color: accent, opacity: 0.7 }}
-                  >
-                    ✓
-                  </span>
+                  <span className="text-[10px] text-emerald-500 font-medium tracking-wide">DONE</span>
                 )}
               </div>
-
-              <p
-                className="text-[11px] mt-0.5 leading-snug truncate"
-                style={{
-                  color: "hsl(var(--muted-foreground))",
-                  opacity: isPending ? 0.4 : 0.75,
-                }}
-              >
-                {detail && status !== "pending" ? detail : sub}
-              </p>
+              {(status === "pending" || !detail) && (
+                <p className="text-xs text-muted-foreground/50 mt-0.5">{sub}</p>
+              )}
+              {detail && status !== "pending" && (
+                <p className="text-xs text-muted-foreground mt-0.5 truncate leading-relaxed">{detail}</p>
+              )}
             </div>
           </div>
         );
       })}
 
       {done && (
-        <div
-          className="mt-4 flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg"
-          style={{
-            background: "hsl(142 69% 42% / 0.08)",
-            border: "1px solid hsl(142 69% 42% / 0.22)",
-            boxShadow: "0 0 16px -6px hsl(142 69% 42% / 0.25)",
-          }}
-        >
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-          <span className="text-[11px] font-semibold text-emerald-400">
-            Pipeline completed — vault updated
-          </span>
+        <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Pipeline completed successfully</span>
         </div>
       )}
     </div>

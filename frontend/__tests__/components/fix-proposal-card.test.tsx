@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { FixProposalCard } from "@/components/fix-proposal-card";
 import type { FixProposal } from "@/lib/types";
 
@@ -13,23 +13,25 @@ const BASE_FIX: FixProposal = {
   fix_commands: ["git checkout -- config/database.yml", "systemctl restart app"],
   fix_diff: null,
   confidence: 0.92,
+  reasoning: "Vault match (T1_human): signature 'infra:postgres:econnrefused'",
+  rlm_trace: [],
   created_at: new Date().toISOString(),
 };
 
 describe("FixProposalCard", () => {
   it("renders T1 tier badge", () => {
     render(<FixProposalCard fix={BASE_FIX} />);
-    expect(screen.getByText(/T1 — Human Vault/)).toBeInTheDocument();
+    expect(screen.getByText(/T1 Human Pattern/)).toBeInTheDocument();
   });
 
   it("renders T2 tier badge", () => {
     render(<FixProposalCard fix={{ ...BASE_FIX, tier: "T2_synthetic" }} />);
-    expect(screen.getByText(/T2 — Synthetic Cache/)).toBeInTheDocument();
+    expect(screen.getByText(/T2 Validated Logic/)).toBeInTheDocument();
   });
 
   it("renders T3 tier badge", () => {
     render(<FixProposalCard fix={{ ...BASE_FIX, tier: "T3_llm" }} />);
-    expect(screen.getByText(/T3 — LLM Synthesis/)).toBeInTheDocument();
+    expect(screen.getByText(/T3 Synthesized/)).toBeInTheDocument();
   });
 
   it("renders fix description", () => {
@@ -58,8 +60,15 @@ describe("FixProposalCard", () => {
     expect(screen.queryByText(/Similarity/)).not.toBeInTheDocument();
   });
 
-  it("renders diff toggle when diff present", () => {
-    render(<FixProposalCard fix={{ ...BASE_FIX, fix_diff: "--- a/f\n+++ b/f" }} />);
-    expect(screen.getByText("View diff")).toBeInTheDocument();
+  it("renders diff section when diff present", () => {
+    const { container } = render(
+      <FixProposalCard fix={{ ...BASE_FIX, fix_diff: "--- a/f\n+++ b/f" }} />
+    );
+    // The diff toggle is an un-labelled button (chevron only) — find it and click
+    const buttons = container.querySelectorAll("button");
+    expect(buttons.length).toBeGreaterThan(0);
+    // First button in the diff section — click to expand
+    fireEvent.click(buttons[0]);
+    expect(screen.getByText(/--- a\/f/)).toBeInTheDocument();
   });
 });

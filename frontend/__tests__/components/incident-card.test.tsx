@@ -25,7 +25,8 @@ const BASE_INCIDENT: Incident = {
 describe("IncidentCard", () => {
   it("renders the failure type badge", () => {
     render(<IncidentCard incident={BASE_INCIDENT} />);
-    expect(screen.getByText("INFRA")).toBeInTheDocument();
+    // failure_type="infra" renders label "Infra" in the component
+    expect(screen.getByText("Infra")).toBeInTheDocument();
   });
 
   it("renders the source label", () => {
@@ -61,11 +62,13 @@ describe("IncidentCard", () => {
 
   it("renders awaiting_approval status", () => {
     render(<IncidentCard incident={{ ...BASE_INCIDENT, status: "awaiting_approval" }} />);
-    expect(screen.getByText("Awaiting Approval")).toBeInTheDocument();
+    // awaiting_approval renders "Needs Review" in the IncidentCard component
+    expect(screen.getByText("Needs Review")).toBeInTheDocument();
   });
 
   it("falls back to truncated ID when description missing", () => {
     render(<IncidentCard incident={{ ...BASE_INCIDENT, raw_payload: {} }} />);
-    expect(screen.getByText(/Incident 550e8400/)).toBeInTheDocument();
+    // ID-{first 8 chars} format
+    expect(screen.getByText(/ID-550e8400/i)).toBeInTheDocument();
   });
 });

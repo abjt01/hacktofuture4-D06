@@ -1,16 +1,16 @@
 import { cn } from "@/lib/utils";
 
 const VARIANTS = {
-  default:  "bg-secondary text-secondary-foreground border border-border/60",
-  primary:  "bg-primary/10 text-primary border border-primary/20",
-  success:  "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 dark:text-emerald-400",
-  warning:  "bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:text-amber-400",
-  danger:   "bg-red-500/10 text-red-600 border border-red-500/20 dark:text-red-400",
-  info:     "bg-sky-500/10 text-sky-600 border border-sky-500/20 dark:text-sky-400",
-  muted:    "bg-muted text-muted-foreground border border-transparent",
-  outline:  "bg-transparent text-foreground border border-border",
-  purple:   "bg-purple-500/10 text-purple-600 border border-purple-500/20 dark:text-purple-400",
-  orange:   "bg-orange-500/10 text-orange-600 border border-orange-500/20 dark:text-orange-400",
+  default:  "bg-slate-100 text-slate-600 border border-slate-200",
+  primary:  "bg-orange-500/10 text-orange-600 border border-orange-500/20",
+  success:  "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20",
+  warning:  "bg-amber-500/10 text-amber-600 border border-amber-500/20",
+  danger:   "bg-red-500/10 text-red-600 border border-red-500/20",
+  info:     "bg-sky-500/10 text-sky-600 border border-sky-500/20",
+  muted:    "bg-slate-50 text-slate-400 border border-slate-100",
+  outline:  "bg-transparent text-slate-900 border border-slate-200",
+  purple:   "bg-purple-500/10 text-purple-600 border border-purple-500/20",
+  orange:   "bg-orange-500/10 text-orange-600 border border-orange-500/20",
 } as const;
 
 export type BadgeVariant = keyof typeof VARIANTS;
