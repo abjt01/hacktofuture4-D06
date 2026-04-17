@@ -7,7 +7,6 @@ import type { AgentLog, SandboxResult } from "@/lib/types";
 interface StreamState {
   logs: AgentLog[];
   sandboxResult: SandboxResult | null;
-  status: string | null;
   done: boolean;
   error: string | null;
 }
@@ -16,13 +15,12 @@ export function useAgentStream(incidentId: string | null) {
   const [state, setState] = useState<StreamState>({
     logs: [],
     sandboxResult: null,
-    status: null,
     done: false,
     error: null,
   });
 
   const reset = useCallback(() => {
-    setState({ logs: [], sandboxResult: null, status: null, done: false, error: null });
+    setState({ logs: [], sandboxResult: null, done: false, error: null });
   }, []);
 
   useEffect(() => {
@@ -48,11 +46,6 @@ export function useAgentStream(incidentId: string | null) {
             setState((prev) => ({
               ...prev,
               sandboxResult: event.data as SandboxResult,
-            }));
-          } else if (event.type === "status") {
-            setState((prev) => ({
-              ...prev,
-              status: (event.data as { status: string }).status,
             }));
           }
         } catch {
